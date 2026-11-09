@@ -1,4 +1,4 @@
-/* HiAmanda.dev — Instructor View (second monitor) */
+/* horizon.dev — Instructor View (second monitor) */
 body { display: flex; flex-direction: column; height: 100vh; --scale: 1; }
 .mark {
   width: 22px; height: 22px; border-radius: 50%; flex: none;

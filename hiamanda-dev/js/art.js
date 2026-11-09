@@ -1,4 +1,4 @@
-/* HiAmanda.dev — generated project artwork (SVG). Original, no image files. */
+/* horizon.dev — generated project artwork (SVG). Original, no image files. */
 (function () {
   function rng(seed) {
     let s = seed >>> 0;

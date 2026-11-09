@@ -1,4 +1,4 @@
-# HiAmanda.dev · Code Lab
+# horizon.dev · Code Lab
 
 Practice Python and SQL by building five small, real-world projects, right in the browser. No installs, no accounts, nothing to buy.
 

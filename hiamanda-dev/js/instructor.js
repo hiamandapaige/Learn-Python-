@@ -1,4 +1,4 @@
-/* HiAmanda.dev — Instructor View. Stays in sync with the workspace in another window. */
+/* horizon.dev — Instructor View. Stays in sync with the workspace in another window. */
 (function () {
   "use strict";
   const $ = s => document.querySelector(s);
@@ -60,7 +60,7 @@
     if (!P) {
       main.innerHTML = `<div class="it-empty"><span class="mark" style="display:inline-block;width:40px;height:40px"></span>
         <h1>Waiting for a project</h1>
-        <p>Open a project in the HiAmanda.dev window and this screen will follow along, step by step. You can also pick one from the menu above.</p>
+        <p>Open a project in the horizon.dev window and this screen will follow along, step by step. You can also pick one from the menu above.</p>
         <p>Keyboard: <kbd>←</kbd> <kbd>→</kbd> move between steps · <kbd>F</kbd> follow on or off</p></div>`;
       return;
     }

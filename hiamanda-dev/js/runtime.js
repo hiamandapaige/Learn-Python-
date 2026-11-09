@@ -1,4 +1,4 @@
-/* HiAmanda.dev — loads Python (Pyodide) and the code editor (Monaco) from free public CDNs,
+/* horizon.dev — loads Python (Pyodide) and the code editor (Monaco) from free public CDNs,
    and talks to the Python runner in js/python.js. Nothing is installed on the learner's computer. */
 (function () {
   const PYODIDE_URL = "https://cdn.jsdelivr.net/pyodide/v0.27.7/full/";

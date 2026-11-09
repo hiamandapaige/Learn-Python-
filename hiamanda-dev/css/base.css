@@ -1,4 +1,4 @@
-/* HiAmanda.dev — shared tokens and base styles */
+/* horizon.dev — shared tokens and base styles */
 :root {
   --void: #030205;
   --ink-1: #08060d;
@@ -26,7 +26,7 @@
   --bad-ink: #2b0d15;
   --warn: #ffbf73;
 
-  --font-title: "Saira Stencil One", "Sora", system-ui, sans-serif;
+  --font-title: "Julius Sans One", "Sora", system-ui, sans-serif;
   --font-ui: "Sora", system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-code: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
 

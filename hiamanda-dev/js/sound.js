@@ -1,4 +1,4 @@
-/* HiAmanda.dev — sound. Every sound is made live with the Web Audio API,
+/* horizon.dev — sound. Every sound is made live with the Web Audio API,
    so there are no audio files to download or license. */
 (function () {
   const KEY = "hi.sound";

@@ -1,5 +1,5 @@
 /* =====================================================================
-   HiAmanda.dev — project lessons
+   horizon.dev — project lessons
    Each project has:
      briefing  -> the mission card + the Instructor View "before you start"
      steps     -> one quest card each, with code, talk track and a check

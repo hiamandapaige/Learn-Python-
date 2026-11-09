@@ -1,4 +1,4 @@
-/* HiAmanda.dev — the app: welcome, project picker, workspace, quest cards, completion. */
+/* horizon.dev — the app: welcome, project picker, workspace, quest cards, completion. */
 (function () {
   "use strict";
   const $ = (s, el = document) => el.querySelector(s);
@@ -64,23 +64,24 @@
     const g = canvas.getContext("2d");
     let W = 0, H = 0, DPR = 1, t0 = performance.now(), raf = 0, energy = 0.25, warp = 0;
     const GLYPHS = ["def", "{ }", "( )", "=", "SELECT", "for", "in", "[ ]", ":", "#", "0", "1", "pd", "import", "if", "*", ";", "JOIN", "print", "...", "λ", "==", "WHERE", "csv", "+=", "</>", "True", "None", "AS", "json"];
-    let parts = [], dust = [];
+    let parts = [], dust = [], lastTime = 0;
 
     function resize() {
       DPR = Math.min(window.devicePixelRatio || 1, 2);
       W = canvas.clientWidth; H = canvas.clientHeight;
       canvas.width = W * DPR; canvas.height = H * DPR;
       g.setTransform(DPR, 0, 0, DPR, 0, 0);
+      Alley.resize(W, H, DPR);
     }
     function seed() {
-      parts = Array.from({ length: 44 }, (_, i) => ({
+      parts = Array.from({ length: 30 }, (_, i) => ({
         txt: GLYPHS[i % GLYPHS.length],
-        a: 1.25 + Math.random() * 1.45,
+        a: 1.6 + Math.random() * 2.2,
         squash: 0.22 + Math.random() * 0.22,
         tilt: (Math.random() - 0.5) * 0.9,
         speed: (0.12 + Math.random() * 0.22) * (Math.random() < 0.5 ? 1 : -1),
         phase: Math.random() * Math.PI * 2,
-        size: 11 + Math.random() * 6
+        size: 10 + Math.random() * 5
       }));
       dust = Array.from({ length: 70 }, () => ({
         x: Math.random(), y: Math.random(), v: 0.004 + Math.random() * 0.012,
@@ -88,8 +89,8 @@
       }));
     }
     function center() {
-      const narrow = W < 860;
-      return { cx: narrow ? W * 0.5 : W * 0.7, cy: narrow ? H * 0.17 : H * 0.48, R: Math.min(W, H) * (narrow ? 0.12 : 0.16) };
+      const [cx, cy] = Alley.geo.orb;
+      return { cx, cy, R: Math.min(W, H) * (W < 860 ? 0.085 : 0.1) };
     }
     function drawParticle(p, time, cx, cy, R, front) {
       const th = p.phase + time * p.speed * (1 + warp * 6);
@@ -110,24 +111,17 @@
     function frame(now) {
       const time = reduceMotion ? 8 : (now - t0) / 1000;
       const { cx, cy, R } = center();
+      const dt = Math.min(0.05, Math.max(0, time - lastTime)); lastTime = time;
       g.globalCompositeOperation = "source-over";
-      g.fillStyle = "#030205"; g.fillRect(0, 0, W, H);
-
-      // drifting haze
-      const hz = [[0.75, 0.45, 0.75, "rgba(76, 29, 149, .22)"], [0.15, 0.95, 0.55, "rgba(42, 15, 92, .28)"], [0.55, 0.05, 0.45, "rgba(124, 58, 237, .06)"]];
-      hz.forEach(([x, y, r, c], i) => {
-        const hx = (x + Math.sin(time * 0.05 + i * 2) * 0.05) * W, hy = (y + Math.cos(time * 0.04 + i) * 0.05) * H;
-        const gr = g.createRadialGradient(hx, hy, 0, hx, hy, r * Math.max(W, H));
-        gr.addColorStop(0, c); gr.addColorStop(1, "rgba(3, 2, 5, 0)");
-        g.fillStyle = gr; g.fillRect(0, 0, W, H);
-      });
+      // the alley: walls, wet floor, props and the glowing street at the far end
+      Alley.drawBack(g, time);
 
       // floating code dust
       g.textAlign = "center"; g.textBaseline = "middle";
       dust.forEach(d => {
         if (!reduceMotion) { d.y -= d.v / 60 * (1 + warp * 20); if (d.y < -0.05) { d.y = 1.05; d.x = Math.random(); } }
         g.font = `${d.s}px "JetBrains Mono", monospace`;
-        g.fillStyle = `rgba(187, 152, 255, ${d.a})`;
+        g.fillStyle = `rgba(187, 152, 255, ${d.a * 0.6})`;
         g.fillText(d.txt, d.x * W, d.y * H);
       });
 
@@ -167,6 +161,9 @@
       }
       g.globalCompositeOperation = "source-over";
       parts.forEach(p => drawParticle(p, time, cx, cy, R, true));
+
+      // neon signs, steam, fog and rain sit in front of everything else
+      Alley.drawFront(g, time, dt, reduceMotion);
 
       if (!reduceMotion) raf = requestAnimationFrame(frame);
     }
