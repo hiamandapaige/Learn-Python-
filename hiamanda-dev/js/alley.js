@@ -26,7 +26,7 @@
 
   // light reaching a point: purple from the far end, amber from sign A, magenta from sign B
   function light(gm, x, y, z) {
-    const ip = Math.pow(z / gm.FAR, 1.7) * 0.9 + 0.03;
+    const ip = Math.pow(z / gm.FAR, 2) * 0.72 + 0.015;
     const a = gm.signA, b = gm.signB;
     const da = Math.hypot(x - (a.x0 + a.x1) / 2, y - (a.y0 + a.y1) / 2, z - a.z);
     const db = Math.hypot(x - (b.x0 + b.x1) / 2, y - (b.y0 + b.y1) / 2, z - b.z);
@@ -75,7 +75,7 @@
     // the far end: hazy violet street, distant buildings, a strip of night sky
     const end = [P(L, 0, FAR), P(R, 0, FAR), P(R, TOP, FAR), P(L, TOP, FAR)];
     let gr = g.createLinearGradient(0, end[2][1], 0, end[0][1]);
-    gr.addColorStop(0, "#0c0619"); gr.addColorStop(0.55, "#3a1772"); gr.addColorStop(0.85, "#8a3fd9"); gr.addColorStop(1, "#c77bff");
+    gr.addColorStop(0, "#07030f"); gr.addColorStop(0.55, "#2c1158"); gr.addColorStop(0.85, "#7a34cc"); gr.addColorStop(1, "#c77bff");
     g.fillStyle = gr; poly(g, end); g.fill();
     g.save(); poly(g, end); g.clip();
     for (let i = 0; i < 9; i++) {
@@ -96,7 +96,7 @@
     // wet floor
     const floor = [P(L, 0, 0), P(R, 0, 0), P(R, 0, FAR), P(L, 0, FAR)];
     gr = g.createLinearGradient(0, H, 0, P(0, 0, FAR)[1]);
-    gr.addColorStop(0, "#040208"); gr.addColorStop(0.6, "#0d0618"); gr.addColorStop(1, "#3b1a70");
+    gr.addColorStop(0, "#020104"); gr.addColorStop(0.6, "#08040f"); gr.addColorStop(1, "#2a1252");
     g.fillStyle = gr; poly(g, floor); g.fill();
     g.save(); poly(g, floor); g.clip();
     g.strokeStyle = "rgba(0, 0, 0, .55)"; g.lineWidth = 1;
@@ -136,7 +136,7 @@
     spill((a.x0 + a.x1) / 2, 4.2, a.z, 4.2, "rgba(255, 150, 70, .22)");
     spill((a.x0 + a.x1) / 2, 0.2, a.z, 3.2, "rgba(255, 150, 70, .14)");
     spill((b.x0 + b.x1) / 2, 5, b.z, 5, "rgba(224, 92, 255, .2)");
-    spill((L + R) / 2, 3, FAR, 14, "rgba(150, 80, 255, .22)");
+    spill((L + R) / 2, 3, FAR, 12, "rgba(150, 80, 255, .2)");
     g.globalCompositeOperation = "source-over";
 
     // props: dark silhouettes with a thin rim of light
@@ -217,16 +217,33 @@
       g.fillStyle = gr; g.fillRect(0, 0, W, H);
     }
     gr = g.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.35, W / 2, H / 2, Math.max(W, H) * 0.78);
-    gr.addColorStop(0, "rgba(0,0,0,0)"); gr.addColorStop(1, "rgba(0,0,0,.7)");
+    gr.addColorStop(0, "rgba(0,0,0,0)"); gr.addColorStop(1, "rgba(0,0,0,.85)");
     g.fillStyle = gr; g.fillRect(0, 0, W, H);
+    // overall darkness, so the orb and the neon carry the light
+    g.fillStyle = "rgba(1, 0, 3, .22)"; g.fillRect(0, 0, W, H);
     return c;
   }
 
   /* ---------- animated layer */
-  let steam = [], rain = [], flick = { a: 1, b: 1, nextA: 0, nextB: 0 };
+  let steam = [], rain = [], splashes = [], splashDebt = 0, flick = { a: 1, b: 1, nextA: 0, nextB: 0 };
+  // three depths of rain: far (fine and slow), middle, and near (long, fast streaks)
+  const RAIN_LAYERS = [
+    { n: 170, len: [6, 11], v: [0.7, 0.95], a: 0.09, w: 1 },
+    { n: 110, len: [15, 26], v: [1.25, 1.6], a: 0.15, w: 1.1 },
+    { n: 34, len: [48, 90], v: [2.4, 3.1], a: 0.2, w: 1.6 }
+  ];
+  const WIND = 0.17;
   function seedAnim(gm) {
     steam = Array.from({ length: 16 }, (_, i) => ({ t: i / 16, drift: (Math.random() - 0.5) * 0.6, size: 0.7 + Math.random() * 0.8 }));
-    rain = Array.from({ length: gm.narrow ? 50 : 110 }, () => ({ x: Math.random(), y: Math.random(), v: 0.6 + Math.random() * 0.6, l: 10 + Math.random() * 16 }));
+    rain = [];
+    RAIN_LAYERS.forEach(L => {
+      const n = Math.round(L.n * (gm.narrow ? 0.5 : 1));
+      for (let i = 0; i < n; i++) rain.push({
+        x: Math.random() * 1.2, y: Math.random(), layer: L,
+        v: L.v[0] + Math.random() * (L.v[1] - L.v[0]), l: L.len[0] + Math.random() * (L.len[1] - L.len[0])
+      });
+    });
+    splashes = [];
   }
 
   function neonSign(g, gm, s, text, tube, glow, level, vertical) {
@@ -286,15 +303,42 @@
       const fg = g.createLinearGradient(0, fy - H * 0.12, 0, H);
       fg.addColorStop(0, "rgba(124, 58, 237, 0)"); fg.addColorStop(0.5, "rgba(124, 58, 237, .05)"); fg.addColorStop(1, "rgba(60, 20, 120, .08)");
       g.fillStyle = fg; g.fillRect(0, fy - H * 0.12, W, H);
-      // light rain
-      g.strokeStyle = "rgba(200, 180, 255, .1)"; g.lineWidth = 1;
-      g.beginPath();
+      // rain: brighter where it passes through the orb's glow or the amber sign's light
+      const [ox, oy] = geo.orb;
+      const sa = geo.signA, [ax, ay] = P((sa.x0 + sa.x1) / 2, (sa.y0 + sa.y1) / 2, sa.z);
+      const glowR = H * 0.38, ambR = H * 0.22;
+      g.globalCompositeOperation = "lighter"; g.lineCap = "round";
       rain.forEach(d => {
-        if (!still) { d.y += d.v * dt; if (d.y > 1.05) { d.y = -0.05; d.x = Math.random(); } }
-        const x = d.x * W, y = d.y * H;
-        g.moveTo(x, y); g.lineTo(x - 2, y + d.l);
+        if (!still) { d.y += d.v * dt; if (d.y > 1.08) { d.y = -0.08 - Math.random() * 0.1; d.x = Math.random() * 1.2; } }
+        const x = d.x * W, y = d.y * H, dx = -d.l * WIND;
+        const mx = x + dx / 2, my = y + d.l / 2;
+        const bo = Math.max(0, 1 - Math.hypot(mx - ox, my - oy) / glowR);
+        const ba = Math.max(0, 1 - Math.hypot(mx - ax, my - ay) / ambR);
+        const alpha = Math.min(0.75, d.layer.a * (1 + bo * bo * 4 + ba * ba * 3));
+        g.strokeStyle = ba > bo ? `rgba(255, 196, 140, ${alpha})` : `rgba(214, 196, 255, ${alpha})`;
+        g.lineWidth = d.layer.w;
+        g.beginPath(); g.moveTo(x, y); g.lineTo(x + dx, y + d.l); g.stroke();
       });
-      g.stroke();
+      // splashes on the wet ground
+      if (!still) {
+        splashDebt += dt * (geo.narrow ? 30 : 55);
+        while (splashDebt >= 1) {
+          splashDebt -= 1;
+          splashes.push({ x: geo.L + 0.25 + Math.random() * (geo.R - geo.L - 0.5), z: 0.8 + Math.pow(Math.random(), 0.7) * 34, t: 0 });
+        }
+      }
+      splashes = splashes.filter(sp => (sp.t += still ? 0 : dt) < 0.42);
+      splashes.forEach(sp => {
+        const p = sp.t / 0.42, [sx, sy] = P(sp.x, 0, sp.z), sc = S(sp.z);
+        const rx = (0.04 + 0.2 * p) * sc, a = 0.4 * (1 - p) * (0.45 + sp.z / geo.FAR);
+        g.strokeStyle = `rgba(215, 195, 255, ${a})`; g.lineWidth = Math.max(0.6, sc * 0.012);
+        g.beginPath(); g.ellipse(sx, sy, rx, rx * 0.26, 0, 0, Math.PI * 2); g.stroke();
+        if (p < 0.35) {
+          const up = (0.05 + p * 0.5) * sc * 0.4;
+          g.fillStyle = `rgba(230, 215, 255, ${a})`;
+          g.fillRect(sx - rx * 0.6, sy - up, 1.2, 1.2); g.fillRect(sx + rx * 0.5, sy - up * 0.8, 1.2, 1.2);
+        }
+      });
       g.restore();
     }
   };

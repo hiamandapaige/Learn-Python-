@@ -73,7 +73,15 @@
       return o;
     });
     lp.connect(out); out.connect(master); lfo.start();
-    ambient = { out, oscs, lfo };
+    // soft rain: looping noise, shaped to sound like rainfall
+    const len = ctx.sampleRate * 3, buf = ctx.createBuffer(1, len, ctx.sampleRate), d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (Math.random() < 0.004 ? 2.2 : 1);
+    const rain = ctx.createBufferSource(); rain.buffer = buf; rain.loop = true;
+    const hp = ctx.createBiquadFilter(); hp.type = "highpass"; hp.frequency.value = 900;
+    const lp2 = ctx.createBiquadFilter(); lp2.type = "lowpass"; lp2.frequency.value = 7000;
+    const rg = ctx.createGain(); rg.gain.value = 0.5;
+    rain.connect(hp); hp.connect(lp2); lp2.connect(rg); rg.connect(out); rain.start();
+    ambient = { out, oscs, lfo, rain };
   }
 
   function setEnabled(on) {

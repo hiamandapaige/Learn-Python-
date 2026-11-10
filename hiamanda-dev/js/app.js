@@ -64,7 +64,7 @@
     const g = canvas.getContext("2d");
     let W = 0, H = 0, DPR = 1, t0 = performance.now(), raf = 0, energy = 0.25, warp = 0;
     const GLYPHS = ["def", "{ }", "( )", "=", "SELECT", "for", "in", "[ ]", ":", "#", "0", "1", "pd", "import", "if", "*", ";", "JOIN", "print", "...", "λ", "==", "WHERE", "csv", "+=", "</>", "True", "None", "AS", "json"];
-    let parts = [], dust = [], lastTime = 0;
+    let parts = [], dust = [], lastTime = 0, burstAt = -10, nextBurst = 2.5, rays = [];
 
     function resize() {
       DPR = Math.min(window.devicePixelRatio || 1, 2);
@@ -113,6 +113,13 @@
       const { cx, cy, R } = center();
       const dt = Math.min(0.05, Math.max(0, time - lastTime)); lastTime = time;
       g.globalCompositeOperation = "source-over";
+      // slow camera push down the alley toward the orb (and a rush forward on start)
+      g.save();
+      if (!reduceMotion) {
+        const zoom = 1 + 0.08 * (0.5 - 0.5 * Math.cos(time * Math.PI * 2 / 22)) + warp * warp * 0.35;
+        const sway = Math.sin(time * 0.19) * W * 0.004;
+        g.translate(cx + sway, cy); g.scale(zoom, zoom); g.translate(-cx, -cy);
+      }
       // the alley: walls, wet floor, props and the glowing street at the far end
       Alley.drawBack(g, time);
 
@@ -159,11 +166,32 @@
         g.lineWidth = 1.2 + (i % 3) * 0.6;
         g.beginPath(); g.ellipse(cx, cy, rr, rr * (0.35 + (i % 3) * 0.2), rot * 0.7, rot, rot + Math.PI * (0.6 + (i % 3) * 0.25)); g.stroke();
       }
+      // every few seconds the orb releases a burst of light rays
+      if (!reduceMotion && time > nextBurst) {
+        burstAt = time; nextBurst = time + 5 + Math.random() * 4;
+        rays = Array.from({ length: 72 }, () => ({ a: Math.random() * Math.PI * 2, l: 0.5 + Math.random() * Math.random() * 3.6, w: 0.8 + Math.random() * 2.4, o: 0.35 + Math.random() * 0.65 }));
+      }
+      const bt = time - burstAt;
+      if (bt >= 0 && bt < 1.3 && rays.length) {
+        const p = bt / 1.3, fade = (1 - p) * (1 - p), grow = 1 - Math.pow(1 - p, 3);
+        const bloom = g.createRadialGradient(cx, cy, 0, cx, cy, r * 4.5 * (0.6 + grow * 0.6));
+        bloom.addColorStop(0, `rgba(255, 232, 255, ${0.6 * fade})`);
+        bloom.addColorStop(0.3, `rgba(224, 92, 255, ${0.38 * fade})`);
+        bloom.addColorStop(1, "rgba(124, 58, 237, 0)");
+        g.fillStyle = bloom; g.fillRect(cx - r * 6, cy - r * 6, r * 12, r * 12);
+        g.lineCap = "round";
+        rays.forEach(ray => {
+          const r0 = r * 0.8, r1 = r0 + r * ray.l * (0.35 + grow * 0.9);
+          g.strokeStyle = `rgba(240, 205, 255, ${ray.o * fade})`; g.lineWidth = ray.w;
+          g.beginPath(); g.moveTo(cx + Math.cos(ray.a) * r0, cy + Math.sin(ray.a) * r0); g.lineTo(cx + Math.cos(ray.a) * r1, cy + Math.sin(ray.a) * r1); g.stroke();
+        });
+      }
       g.globalCompositeOperation = "source-over";
       parts.forEach(p => drawParticle(p, time, cx, cy, R, true));
 
       // neon signs, steam, fog and rain sit in front of everything else
       Alley.drawFront(g, time, dt, reduceMotion);
+      g.restore();
 
       if (!reduceMotion) raf = requestAnimationFrame(frame);
     }
@@ -172,7 +200,7 @@
     return {
       start,
       setEnergy(v) { energy = v; },
-      warp() { warp = 0; const s = performance.now(); const step = n => { warp = Math.min(1, (n - s) / 700); if (warp < 1) requestAnimationFrame(step); }; requestAnimationFrame(step); },
+      warp() { nextBurst = -1; warp = 0; const s = performance.now(); const step = n => { warp = Math.min(1, (n - s) / 700); if (warp < 1) requestAnimationFrame(step); }; requestAnimationFrame(step); },
       stop() { cancelAnimationFrame(raf); }
     };
   })();
@@ -690,6 +718,7 @@
               <div class="quest-obj-text">
                 <p class="quest-task">${esc(s.task)}</p>
                 <p class="quest-why"><b>Why it matters:</b> ${esc(s.why)}</p>
+                ${s.know ? `<p class="quest-why"><b>How do I know?</b> ${esc(s.know)}</p>` : ""}
               </div>
               <button class="btn btn-primary btn-lg" data-act="accept">Accept quest</button>
             </div>`;
@@ -732,6 +761,7 @@
         <div class="dock-body">
           <p class="dock-task">${esc(s.task)}</p>
           <p class="dock-why"><b>Why:</b> ${esc(s.why)}</p>
+          ${s.know ? `<p class="dock-why"><b>How do I know?</b> ${esc(s.know)}</p>` : ""}
           ${fb}${hintHtml}
           <div class="dock-actions">${actions}</div>
         </div>`;
