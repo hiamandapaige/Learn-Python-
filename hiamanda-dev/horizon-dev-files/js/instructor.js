@@ -92,16 +92,21 @@
       html = `
         <p class="it-kicker">${esc(P.title)} · Step ${view} of ${n}</p>
         <h1>${esc(s.title)}</h1>
+        ${s.ask ? `<p class="it-ask">${esc(s.ask)}</p>` : ""}
         <p class="it-task"><b>On their screen:</b> ${esc(s.task)}</p>
-        <div class="it-two">
-          <div class="it-box"><h2>What I'm doing</h2><ul>${s.doing.map(d => `<li>${esc(d)}</li>`).join("")}</ul></div>
-          <div class="it-box"><h2>Why</h2><ul>${s.whyList.map(d => `<li>${esc(d)}</li>`).join("")}</ul></div>
-        </div>
+        ${s.clues ? `<div class="it-two">
+          <div class="it-box"><h2>How do I know what to use?</h2><ul>${s.clues.map(c => `<li>${esc(c)}</li>`).join("")}</ul></div>
+          <div class="it-box"><h2>What the words mean</h2><dl class="it-terms">${(s.terms || []).map(([t, m]) => `<dt>${esc(t)}</dt><dd>${esc(m)}</dd>`).join("")}</dl></div>
+        </div>` : ""}
         <section class="it-code">
           <div class="it-code-head"><h2>Code to add</h2><span class="file">${esc(P.file)}</span><button class="btn it-copy" data-copy>Copy code</button></div>
           <pre><code>${highlight(s.code, P.lang)}</code></pre>
         </section>
         <section class="it-talk"><h2>Talk track</h2>${paras(s.talk)}</section>
+        <div class="it-two">
+          <div class="it-box"><h2>What I'm doing</h2><ul>${s.doing.map(d => `<li>${esc(d)}</li>`).join("")}</ul></div>
+          <div class="it-box"><h2>Why</h2><ul>${s.whyList.map(d => `<li>${esc(d)}</li>`).join("")}</ul></div>
+        </div>
         <section class="it-see"><h2>What you'll see when you run it</h2><p>${esc(s.see)}</p></section>`;
     }
     html += `<div class="it-nav">

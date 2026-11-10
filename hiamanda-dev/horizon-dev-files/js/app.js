@@ -718,6 +718,7 @@
               <div class="quest-obj-text">
                 <p class="quest-task">${esc(s.task)}</p>
                 <p class="quest-why"><b>Why it matters:</b> ${esc(s.why)}</p>
+                ${s.know ? `<p class="quest-why"><b>How do I know?</b> ${esc(s.know)}</p>` : ""}
               </div>
               <button class="btn btn-primary btn-lg" data-act="accept">Accept quest</button>
             </div>`;
@@ -760,6 +761,7 @@
         <div class="dock-body">
           <p class="dock-task">${esc(s.task)}</p>
           <p class="dock-why"><b>Why:</b> ${esc(s.why)}</p>
+          ${s.know ? `<p class="dock-why"><b>How do I know?</b> ${esc(s.know)}</p>` : ""}
           ${fb}${hintHtml}
           <div class="dock-actions">${actions}</div>
         </div>`;

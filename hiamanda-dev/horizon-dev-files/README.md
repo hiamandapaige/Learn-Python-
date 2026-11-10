@@ -54,7 +54,8 @@ You can also double-click `index.html` to open it on your own computer. It still
 index.html         the app: welcome, project picker, workspace
 instructor.html    the second-monitor view
 css/               styles (base.css holds the colors and fonts)
-js/projects.js     every lesson: steps, code, checks, hints, talk tracks  ← edit lessons here
+js/projects.js     every lesson: steps, code, checks and hints  ← edit lessons here
+js/talk.js         talk tracks and "how do I know?" explanations  ← edit talk tracks here
 js/data.js         the sample files, built into the app
 js/python.js       the Python that runs and checks lessons in the browser
 js/app.js          screens and interactions
@@ -66,4 +67,6 @@ data/              the same sample files, for downloading
 
 ### Editing a lesson
 
-Open `js/projects.js`. Each step has a `task` and `why` (the quest card), `doing` and `whyList` (Instructor View bullets), `code`, `talk` (talk track), `see` (what you'll see), `nudge` (first hint), and `check` (a few lines of Python that decide whether the step passed). Change the words freely. If you change a step's `code`, update its `check` to match.
+Talk tracks live in `js/talk.js`. Each step there has `ask` ("We're being asked to…"), `know` (the short "How do I know?" line learners see), `clues`, `terms` and `talk`.
+
+The rest of each lesson is in `js/projects.js`. Each step has a `task` and `why` (the quest card), `doing` and `whyList` (Instructor View bullets), `code`, `talk` (talk track), `see` (what you'll see), `nudge` (first hint), and `check` (a few lines of Python that decide whether the step passed). Change the words freely. If you change a step's `code`, update its `check` to match.

@@ -90,3 +90,11 @@ body { display: flex; flex-direction: column; height: 100vh; --scale: 1; }
   .it-two, .it-recap { grid-template-columns: 1fr; }
   #follow-text { display: none; }
 }
+
+.it-ask {
+  margin: 4px 0 10px; font-size: 1.3em; line-height: 1.45; font-weight: 500; color: #fff;
+  padding: 14px 18px; border-radius: 12px; background: rgba(124, 58, 237, .14); border: 1px solid rgba(157, 107, 255, .3);
+}
+.it-terms { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 7px 14px; align-items: baseline; }
+.it-terms dt { font-family: var(--font-code); font-size: .88em; color: var(--violet-100); background: var(--ink-3); padding: 2px 7px; border-radius: 5px; justify-self: start; }
+.it-terms dd { margin: 0; color: var(--text-dim); line-height: 1.45; }
