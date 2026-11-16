@@ -1644,11 +1644,97 @@
     }
   };
 
+  /* ---------------------------------------------------------------
+     FLOW: how each step's script is broken into beats.
+     A number is a paragraph of the script (counting from 0).
+     A string like "3" or "4-10" is a line range of the step's code,
+     shown right where you'd type it. "run" starts the Run it section.
+     --------------------------------------------------------------- */
+  const FLOW = {
+    "clean-csv": [
+      [0, 1, 2, "1", 3, 4, "3", 5, "4", "run", 6],
+      [0, 1, "1", 2, "2", "run", 3, 4],
+      [0, 1, 2, "1", 3, 4, 5, "2", "run"],
+      [0, 1, 2, 3, "1", 4, "2", 5, "3", "run"],
+      [0, 1, 2, "1-2", 3, "3", 4, 5, "4", "run", 6],
+      [0, 1, 2, "1", 3, "2", 4, "3", "run", 5],
+      [0, 1, 2, 3, 4, "1-2", "run", 5],
+      [0, 1, 2, "1", 3, "2", "run", 4],
+      [0, 1, 2, 3, "1-2", "run", 4]
+    ],
+    "sales-sql": [
+      [0, 1, 2, "1", 3, 4, 5, "run", 6],
+      [0, 1, 2, "1", 3, "2-3", 4, 5, "run", 6],
+      [0, 1, 2, "1-4", 3, 4, 5, "run", 6],
+      [0, 1, 2, "1", 3, 4, "2-4", "run", 5],
+      [0, 1, 2, "1-4", 3, 4, "run", 5, 6],
+      [0, 1, 2, 3, "1-4", 4, "run", 5],
+      [0, 1, 2, "1-7", 3, "run", 4],
+      [0, 1, 2, 3, "1-6", 4, "run", 5]
+    ],
+    "weather-api": [
+      [0, 1, "1", 2, "3", 3, "4-10", 4, "11", 5, "12", "run", 6],
+      [0, 1, 2, "1-2", "run", 3, 4, 5],
+      [0, 1, 2, "1-2", 3, 4, "3", "run", 5],
+      [0, 1, 2, "1", 3, "2-8", 4, "9-10", 5, "11", 6, "13", "run"],
+      [0, 1, 2, "1", 3, "3", 4, "4", 5, "5", 6, "6-12", "run", 7],
+      [0, 1, 2, "1", 3, 4, "2", "run", 5],
+      [0, 1, 2, "1", 3, "2", 4, "3-4", 5, "6", "run", 6]
+    ],
+    "duplicates": [
+      [0, 1, "1", 2, "3", 3, "4", 4, "6", 5, "7", "run", 6],
+      [0, 1, 2, "1-2", 3, "4", 4, "5", 5, "6-7", 6, "8-9", 7, "11", "run"],
+      [0, 1, 2, 3, "1", 4, "2", 5, "4", "run", 6],
+      [0, 1, 2, "1", 3, "2-3", 4, "4", 5, "6-8", "run", 6],
+      [0, 1, 2, "1-2", 3, "3-4", 4, "5-7", 5, 6, "9", "run", 7],
+      [0, 1, "1", 2, "2", 3, "3", 4, "4-5", 5, "7", "run", 6],
+      [0, 1, 2, "1-2", 3, 4, "3-4", 5, "6", "run", 6]
+    ],
+    "relational-db": [
+      [0, 1, "1", 2, 3, "2", 4, "3", 5, "4", 6, "5", "run"],
+      [0, 1, 2, "1-5", 3, "6", 4, 5, "7", "run"],
+      [0, 1, "1-2", 2, "3", 3, "4", 4, "5-6", 5, "7", 6, "8", "run"],
+      [0, 1, "1", 2, "2", 3, "3-5", 4, "run", 5],
+      [0, 1, "1", 2, "2-7", 3, "run", 4],
+      [0, 1, "1", 2, "2-9", 3, 4, 5, "run", 6],
+      [0, 1, 2, "1", 3, "2-3", 4, "run", 5],
+      [0, 1, 2, "1-4", 3, "5-7", 4, "8", 5, "9", "run", 6],
+      [0, 1, 2, 3, "1-4", 4, "run", 5]
+    ]
+  };
+
+  // Turn a step's script and code into beats: say / code / run
+  function beats(talk, code, flow) {
+    const paras = talk.split(/\n\s*\n/).map(p => p.replace(/\s*\n\s*/g, " ").trim());
+    const lines = code.split("\n");
+    const out = { beats: [], run: [] };
+    let inRun = false;
+    flow.forEach(tok => {
+      if (tok === "run") { inRun = true; return; }
+      if (typeof tok === "number") {
+        const target = inRun ? out.run : out.beats;
+        const last = target[target.length - 1];
+        if (!inRun && last && last.kind === "say") last.text.push(paras[tok]);
+        else if (inRun) out.run.push(paras[tok]);
+        else target.push({ kind: "say", text: [paras[tok]] });
+      } else {
+        const [a, b] = tok.split("-").map(Number);
+        out.beats.push({ kind: "code", from: a, to: b || a, code: lines.slice(a - 1, b || a).join("\n") });
+      }
+    });
+    return out;
+  }
+
   (window.PROJECTS || []).forEach(p => {
     const c = CLASS[p.id];
     if (!c) return;
     p.lesson = { series: SERIES, session: c.session, opening: c.opening, closing: c.closing };
-    p.steps.forEach((s, i) => { if (c.steps[i]) s.lesson = c.steps[i]; });
+    p.steps.forEach((s, i) => {
+      if (!c.steps[i]) return;
+      s.lesson = c.steps[i];
+      const f = FLOW[p.id] && FLOW[p.id][i];
+      if (f) s.lesson.flow = beats(s.lesson.talk, s.code, f);
+    });
   });
   window.CLASS_SERIES = SERIES;
 })();

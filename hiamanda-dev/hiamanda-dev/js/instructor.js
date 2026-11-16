@@ -67,6 +67,24 @@
   }
   if (timerStart) timerTick = setInterval(renderTimer, 1000);
 
+  function renderFlow(flow) {
+    // group beats into parts: what to say, then the lines to type right under it
+    const parts = [];
+    flow.beats.forEach((b, i) => {
+      if (b.kind === "say" || !parts.length) parts.push({ say: b.kind === "say" ? b.text : [], code: [] });
+      if (b.kind === "code") parts[parts.length - 1].code.push(i);
+    });
+    return `<div class="it-flow">${parts.map((pt, n) => `
+      <section class="it-beat">
+        <h2 class="it-beat-label">Part ${n + 1}</h2>
+        ${pt.say.length ? `<div class="it-say">${pt.say.map(t => `<p>${esc(t)}</p>`).join("")}</div>` : ""}
+        ${pt.code.map(i => `<div class="it-type">
+          <div class="it-type-head"><span>Type</span><button class="it-copy-chunk" data-chunk="${i}" title="Copy these lines">Copy</button></div>
+          <pre class="it-chunk"><code>${highlight(flow.beats[i].code, P.lang)}</code></pre>
+        </div>`).join("")}
+      </section>`).join("")}</div>`;
+  }
+
   function renderSelect() {
     $("#project-select").innerHTML = `<option value="">Choose a project…</option>` +
       PROJECTS.map(p => `<option value="${p.id}" ${P && P.id === p.id ? "selected" : ""}>${p.lesson ? `Session ${p.lesson.session}: ` : ""}${esc(p.world.name)} · ${esc(p.title)}</option>`).join("");
@@ -134,20 +152,25 @@
         <h1 class="world-title">${esc(s.title)}</h1>
         ${s.ask ? `<p class="it-ask">${esc(s.ask)}</p>` : ""}
         <p class="it-task"><b>On their screen:</b> ${esc(s.task)}</p>
-        <section class="it-talk"><h2>Script</h2>${paras(ls.talk || s.talk)}</section>
-        <section class="it-code">
-          <div class="it-code-head"><h2>Type along</h2><span class="file">${esc(P.file)}</span><button class="btn it-copy" data-copy>Copy code</button></div>
-          <pre><code>${highlight(s.code, P.lang)}</code></pre>
-          ${ls.lines ? `<div class="it-lines"><h2>Line by line</h2><dl>${ls.lines.map(([c, m]) => `<dt><code>${esc(c)}</code></dt><dd>${esc(m)}</dd>`).join("")}</dl></div>` : ""}
+        ${ls.flow ? renderFlow(ls.flow) : `<section class="it-talk"><h2>Script</h2>${paras(ls.talk || s.talk)}</section>
+        <section class="it-code"><div class="it-code-head"><h2>Type along</h2><span class="file">${esc(P.file)}</span><button class="btn it-copy" data-copy>Copy code</button></div><pre><code>${highlight(s.code, P.lang)}</code></pre></section>`}
+        <section class="it-run">
+          <h2 class="it-beat-label">Run it</h2>
+          ${ls.flow && ls.flow.run.length ? `<div class="it-say">${ls.flow.run.map(t => `<p>${esc(t)}</p>`).join("")}</div>` : ""}
+          <div class="it-see"><h3>What they'll see</h3><p>${esc(s.see)}</p></div>
         </section>
-        <section class="it-see"><h2>What they'll see when they run it</h2><p>${esc(s.see)}</p></section>
         ${ls.check ? `<div class="it-two">
           <div class="it-box it-checkin"><h2>Check in with the class</h2><p class="q">${esc(ls.check.q)}</p>
             <details><summary>Show the answer</summary><p>${esc(ls.check.a)}</p></details></div>
           <div class="it-box it-watch"><h2>Watch for in the chat</h2>${list(ls.watch || [])}</div>
         </div>` : ""}
         ${ls.recap ? `<p class="it-takeaway"><b>Takeaway</b>${esc(ls.recap)}</p>` : ""}
-        <details class="it-ref" open><summary>Reference for this step</summary>
+        <details class="it-ref"><summary>Reference: full code, line by line, and key terms</summary>
+          <section class="it-code">
+            <div class="it-code-head"><h2>All the code for this step</h2><span class="file">${esc(P.file)}</span><button class="btn it-copy" data-copy>Copy all</button></div>
+            <pre><code>${highlight(s.code, P.lang)}</code></pre>
+            ${ls.lines ? `<div class="it-lines"><h2>Line by line</h2><dl>${ls.lines.map(([c, m]) => `<dt><code>${esc(c)}</code></dt><dd>${esc(m)}</dd>`).join("")}</dl></div>` : ""}
+          </section>
           ${s.clues ? `<div class="it-two">
             <div class="it-box"><h2>How do I know what to use?</h2>${list(s.clues)}</div>
             <div class="it-box"><h2>What the words mean</h2><dl class="it-terms">${(s.terms || []).map(([t, m]) => `<dt>${esc(t)}</dt><dd>${esc(m)}</dd>`).join("")}</dl></div>
@@ -222,6 +245,12 @@
   document.addEventListener("click", e => {
     const r = e.target.closest("[data-view]"); if (r) { view = +r.dataset.view; if (follow && live.project) setFollow(false); render(true); return; }
     const g = e.target.closest("[data-go]"); if (g) { go(+g.dataset.go); return; }
+    const ch = e.target.closest("[data-chunk]");
+    if (ch) {
+      const st = P.steps[view - 1], b = st.lesson.flow.beats[+ch.dataset.chunk];
+      navigator.clipboard.writeText(b.code).then(() => { ch.textContent = "Copied"; setTimeout(() => ch.textContent = "Copy", 1200); }, () => toast("Couldn't copy. Select the code instead."));
+      return;
+    }
     if (e.target.closest("[data-copy]")) {
       const s = P.steps[view - 1];
       navigator.clipboard.writeText(s.code).then(() => toast("Code copied"), () => toast("Couldn't copy. Select the code instead."));
